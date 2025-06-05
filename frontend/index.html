@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product CRUD</title>
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const apiUrl = '/api/products/';
+
+    function ProductForm({ product, onSuccess }) {
+      const [data, setData] = React.useState(product || { name: '', description: '', price: '' });
+      const handleChange = e => setData({ ...data, [e.target.name]: e.target.value });
+      const handleSubmit = e => {
+        e.preventDefault();
+        const method = product ? 'PUT' : 'POST';
+        const url = product ? `${apiUrl}${product.id}/` : apiUrl;
+        fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(() => onSuccess());
+      };
+      return (
+        <form onSubmit={handleSubmit}>
+          <input name="name" value={data.name} onChange={handleChange} placeholder="Name" />
+          <input name="description" value={data.description} onChange={handleChange} placeholder="Description" />
+          <input name="price" value={data.price} onChange={handleChange} placeholder="Price" />
+          <button type="submit">{product ? 'Update' : 'Create'}</button>
+        </form>
+      );
+    }
+
+    function App() {
+      const [products, setProducts] = React.useState([]);
+      const [editing, setEditing] = React.useState(null);
+
+      const load = () => fetch(apiUrl).then(r => r.json()).then(setProducts);
+      React.useEffect(load, []);
+
+      const remove = id => fetch(`${apiUrl}${id}/`, { method: 'DELETE' }).then(load);
+      const startEdit = p => setEditing(p);
+      const stopEdit = () => { setEditing(null); load(); };
+
+      return (
+        <div>
+          <h1>Products</h1>
+          <ProductForm product={editing} onSuccess={stopEdit} />
+          <ul>
+            {products.map(p => (
+              <li key={p.id}>
+                {p.name} - {p.price}
+                <button onClick={() => startEdit(p)}>Edit</button>
+                <button onClick={() => remove(p.id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
